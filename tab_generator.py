@@ -2,145 +2,175 @@
 name: tab_generator.py
 author: Uzo Ukekwe
 version: python 3.8
-purpose: generates a variation on traditional bass tabs
+purpose: generates bass tabs from input file
 """
 
-import random
+import os.path
+import sys
+import time
 
-strings = ["E", "A", "D", "G"]
+strings = ["E", "A", "D", "G"]    # string names on 4-string bass
 
 
-def display_intro():
+def file_error(message):
     """
-    Print the greeting and initial instructions
+    Print message about file format error and quit
+    :param message: specifics of file error
     """
-    print("〜♫ Bass Tab Generator ♫〜")
-    print()
-
-    print("How To Read the Tab")
-    print("-----------")
-    print(strings[0]+"  "+strings[1]+"  "+strings[2]+"  "+strings[3])
-    print("-- -- -- --")
-    print("x  |   |  | (1st note played: xth fret on E string)")
-    print("|  x   |  | (2nd note played: xth fret on A string)")
-    print("|  |   x  | (3rd note played: xth fret on D string)")
-    print("|  |   |  | (...)")
-    print("|  |   |  x (Nth note played: xth fret on G string)")
-
-    print("\nTo use the generator, specify the note you would like to add one at a time."
-          "\nThe tab will print at the end.\nShall we get started?\n")
+    print("INVALID FILE FORMAT: " + message)
+    time.sleep(5)
+    sys.exit()
 
 
-def print_tab(numbers):
+def char_split(string):
     """
-    Print the finalized tab
-    :param numbers: corresponding list of fret #s added to tab
+    Split string into list of individual characters
+    (empty delimiter, no space requirement between chars)
+    :param string: string to split
+    :return: list of chars in string
     """
-    title = input("\nWhat is this song called? ")
-    print()
-    print("♪ " + title + " Bass Tab ♪")
-    print()
-    print("-----------")
-    print(strings[0] + "  " + strings[1] + "  " + strings[2] + "  " + strings[3])
-    print("-- -- -- --")
-
-    while len(numbers) != 0:
-        i = 0
-        print(numbers[i] + "  " + numbers[i + 1] + "  " + numbers[i + 2] + "  " + numbers[i + 3])
-        numbers.remove(numbers[i])
-        numbers.remove(numbers[i])
-        numbers.remove(numbers[i])
-        numbers.remove(numbers[i])
+    return [char for char in string]
 
 
-def edit_row(new_string, new_fret, letters, numbers):
+def parse_file(file_name):
     """
-    Add the fret number to its appropriate string
-    :param new_string: string of new note
-    :param new_fret: fret of new note
-    :param letters: list of strings added to tab
-    :param numbers: corresponding list of fret #s added to tab
+    Parse input file to retrieve string letters and fret numbers
+    :param file_name: name of file containing StringLetterFretNumber units
+    :return: list of input file tokens
     """
-    n = 0
-    while n < len(strings):
-        if strings[n] != new_string:
-            letters.append(strings[n])
-            numbers.append("-")
-        else:
-            letters.append(new_string)
-            numbers.append(new_fret)
-        n += 1
+    input_tokens = []
+
+    with open(file_name) as file:
+        for line in file:
+            need_letter = True
+            need_number = False
+            sequence = char_split(line.strip())
+            while len(sequence) > 0:
+                token = sequence.pop(0)
+
+                if need_letter and token in strings:
+                    input_tokens.append(token)
+                    need_letter = False
+                    need_number = True
+                elif need_letter and token.isspace():
+                    input_tokens.append("-")
+                elif need_letter and token not in strings:
+                    file_error("only case-sensitive E A D or G strings accepted")
+                elif need_number:
+                    if not token.isdigit():
+                        file_error("missing fret number in sequence")
+
+                    # account for double digit fret numbers
+                    if len(sequence) >= 1 and sequence[0].isdigit():
+                        token += sequence.pop(0)
+                    if int(token) > 20 or int(token) < 0:
+                        file_error("fret number out of bounds (0-20 inclusive)")
+
+                    input_tokens.append(token)
+                    need_letter = True
+                    need_number = False
+            if need_number:
+                file_error("missing final fret number on line")
+
+    return input_tokens
 
 
-def random_mode(letters, numbers):
+def make_note_lists(all_notes):
     """
-    Create a random tab
-    :param letters: list of strings added to tab
-    :param numbers: corresponding list of fret #s added to tab
+    Transfer fret numbers/rests to appropriate lists
+    :param all_notes: input file tokens
+    :return: list of all strings, each containing a list of their chosen frets
     """
-    print("\nYou are in random mode. (Random notes will be generated. "
-          "Maybe they'll inspire you?)")
+    e_notes = []
+    a_notes = []
+    d_notes = []
+    g_notes = []
+    note_lists = [e_notes, a_notes, d_notes, g_notes]
 
-    num_notes = int(input("\nHow many notes will be in this tab? "))
+    while len(all_notes) > 0:
+        token = all_notes.pop(0)
+        if token == "E":
+            fret = all_notes.pop(0)
+            e_notes.append(fret)
+            a_notes.append("-" * len(fret))
+            d_notes.append("-" * len(fret))
+            g_notes.append("-" * len(fret))
+        elif token == "A":
+            fret = all_notes.pop(0)
+            a_notes.append(fret)
+            e_notes.append("-" * len(fret))
+            d_notes.append("-" * len(fret))
+            g_notes.append("-" * len(fret))
+        elif token == "D":
+            fret = all_notes.pop(0)
+            d_notes.append(fret)
+            e_notes.append("-" * len(fret))
+            a_notes.append("-" * len(fret))
+            g_notes.append("-" * len(fret))
+        elif token == "G":
+            fret = all_notes.pop(0)
+            g_notes.append(fret)
+            e_notes.append("-" * len(fret))
+            a_notes.append("-" * len(fret))
+            d_notes.append("-" * len(fret))
+        elif token == "-":
+            for note_list in note_lists:
+                note_list.append("-")
 
-    # limited fret numbers to prevent too many uncommon placements
-    fret_options = ["0", "1", "2", "3", "4", "5", "6", "7",
-                    "8", "9", "10", "11", "12", "13", "-"]
-
-    for i in range(num_notes):
-        chosen_string = random.choice(strings)
-        chosen_fret = random.choice(fret_options)
-        edit_row(chosen_string, chosen_fret, letters, numbers)
-
-    print_tab(numbers)
+    return note_lists
 
 
-def manual_mode(letters, numbers):
+def make_tab():
     """
     User creates their own tab
-    :param letters: list of strings added to tab
-    :param numbers: corresponding list of fret #s added to tab
     """
-    editing = "yes"
+    file_name = input("Enter the name of your file of string letter-fret number sequences: ")
+    while not os.path.exists(file_name):
+        file_name = input("Enter a valid file in this directory: ")
 
-    while editing != "f":
-        # user input
-        letter_insert = input("\nInsert a string letter: ").upper()
-        while letter_insert not in strings:
-            letter_insert = input("Insert a string letter (Must be E, A, D, or G): ").upper()
+    input_tokens = parse_file(file_name)
+    note_lists = make_note_lists(input_tokens)
 
-        number_insert = str(input("Insert a fret number: "))
-        while int(number_insert) > 20 or int(number_insert) < 0:
-            number_insert = str(input("Insert a fret number (Must be between 0 and 20): "))
+    artist = input("Enter artist's name: ")
+    song = input("Enter song's title: ")
+    print("\n%s - %s Bass Tab" % (artist, song))
 
-        # update letter and number lists with user input
-        edit_row(letter_insert, number_insert, letters, numbers)
+    # print all the notes without going beyond the character per line limit
+    while len(note_lists[0]) > 0:
+        output_line4 = ["E| "]
+        output_line3 = ["A| "]
+        output_line2 = ["D| "]
+        output_line1 = ["G| "]
+        i = 0
+        while i < 120:
+            output_line1.append(note_lists[0].pop(0))
+            output_line2.append(note_lists[1].pop(0))
+            output_line3.append(note_lists[2].pop(0))
+            output_line4.append(note_lists[3].pop(0))
+            if len(note_lists[0]) == 0:
+                break
+            i += 1
+        print("".join(output_line1))
+        print("".join(output_line2))
+        print("".join(output_line3))
+        print("".join(output_line4))
+        print()
 
-        editing = input("(Enter f to finalize the tab, b to add a blank row, or press any key to continue)")
-        if editing == "b":
-            for i in range(len(strings)):
-                letters.append(strings[i])
-                numbers.append("-")
-
-    print_tab(numbers)
+    new_tab = input("Would you like to make a new tab? (Y/N) ")
+    return False if new_tab != "Y" else True
 
 
 def main():
     """
-    Create a new bass tab using random mode or manual mode
+    Create bass tabs while the program runs
     """
-    display_intro()
+    print("〜♫ Bass Tab Generator ♫〜\n")
+    print("file format = StringLetterFretNumber with any number of spaces between each unit\n"
+          "(ex. E4   G5 A0A0A0 D1)\n")
 
-    mode = input("You are in manual mode. (You will enter your own notes)\n"
-                 "(You can press r to switch to random mode or press any key to continue)\n")
-
-    user_letters = []
-    user_numbers = []
-
-    if mode == "r":
-        random_mode(user_letters, user_numbers)
-    else:
-        manual_mode(user_letters, user_numbers)
+    still_going = True
+    while still_going:
+        still_going = make_tab()
 
 
 if __name__ == "__main__":

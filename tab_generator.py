@@ -124,7 +124,7 @@ def make_tab():
     """
     User creates their own tab
     """
-    file_name = input("Enter the name of your file of string letter-fret number sequences: ")
+    file_name = input("\nEnter the name of your file of string letter-fret number sequences: ")
     while not os.path.exists(file_name):
         file_name = input("Enter a valid file in this directory: ")
 
@@ -157,7 +157,7 @@ def make_tab():
         print()
 
     new_tab = input("Would you like to make a new tab? (Y/N) ")
-    return False if new_tab != "Y" else True
+    return False if new_tab.upper() != "Y" else True
 
 
 def main():
@@ -171,6 +171,9 @@ def main():
     still_going = True
     while still_going:
         still_going = make_tab()
+
+    while not still_going:
+        time.sleep(1)
 
 
 if __name__ == "__main__":

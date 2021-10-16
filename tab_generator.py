@@ -143,10 +143,10 @@ def make_tab():
         output_line1 = ["G| "]
         i = 0
         while i < 120:
-            output_line1.append(note_lists[0].pop(0))
-            output_line2.append(note_lists[1].pop(0))
-            output_line3.append(note_lists[2].pop(0))
-            output_line4.append(note_lists[3].pop(0))
+            output_line1.append(note_lists[3].pop(0))
+            output_line2.append(note_lists[2].pop(0))
+            output_line3.append(note_lists[1].pop(0))
+            output_line4.append(note_lists[0].pop(0))
             if len(note_lists[0]) == 0:
                 break
             i += 1

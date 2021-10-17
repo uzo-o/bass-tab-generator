@@ -123,6 +123,7 @@ def make_note_lists(all_notes):
 def make_tab():
     """
     User creates their own tab
+    :return: True if user wants to make another tab, False otherwise
     """
     file_name = input("\nEnter the name of your file of string letter-fret number sequences: ")
     while not os.path.exists(file_name):

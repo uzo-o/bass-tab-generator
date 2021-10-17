@@ -71,6 +71,7 @@ def parse_file(file_name):
                     need_number = False
             if need_number:
                 file_error("missing final fret number on line")
+    file.close()
 
     return input_tokens
 
@@ -165,7 +166,7 @@ def main():
     """
     Create bass tabs while the program runs
     """
-    print("〜♫ Bass Tab Generator ♫〜\n")
+    print("|♫ Bass Tab Generator ♫|\n")
     print("file format = StringLetterFretNumber with any number of spaces between each unit\n"
           "(ex. E4   G5 A0A0A0 D1)\n")
 
